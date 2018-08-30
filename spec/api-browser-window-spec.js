@@ -3235,10 +3235,10 @@ describe('BrowserWindow module', () => {
         typeofRequire: 'function',
         typeofProcess: 'object',
         typeofArrayPush: 'function',
-        typeofFunctionApply: 'function'
+        typeofFunctionApply: 'function',
+        typeofPreloadExecuteJavaScriptProperty: 'undefined'
       },
       pageContext: {
-        openedLocation: '',
         preloadProperty: 'undefined',
         pageProperty: 'string',
         typeofRequire: 'undefined',
@@ -3295,7 +3295,7 @@ describe('BrowserWindow module', () => {
       iw.loadURL(`file://${fixtures}/pages/window-open.html`)
     })
     it('separates the page context from the Electron/preload context with sandbox on', (done) => {
-      ipcMain.once('isolated-sandbox-world', (event, data) => {
+      ipcMain.once('isolated-world', (event, data) => {
         assert.deepEqual(data, expectedContextData)
         done()
       })
@@ -3305,7 +3305,7 @@ describe('BrowserWindow module', () => {
       iw.loadURL(`file://${fixtures}/api/isolated.html`)
       await emittedOnce(iw.webContents, 'did-finish-load')
       iw.webContents.reload()
-      const [, data] = await emittedOnce(ipcMain, 'isolated-sandbox-world')
+      const [, data] = await emittedOnce(ipcMain, 'isolated-world')
       assert.deepEqual(data, expectedContextData)
     })
     it('supports fetch api', async () => {
@@ -3320,6 +3320,17 @@ describe('BrowserWindow module', () => {
       const [, error] = await emittedOnce(ipcMain, 'isolated-fetch-error')
       fetchWindow.destroy()
       assert.equal(error, 'Failed to fetch')
+    })
+    it('doesn\'t break ipc serialization', async () => {
+      iw.loadURL('about:blank')
+      iw.webContents.executeJavaScript(`
+        const opened = window.open()
+        openedLocation = opened.location
+        opened.close()
+        window.postMessage({openedLocation}, '*')
+      `)
+      const [, data] = await emittedOnce(ipcMain, 'isolated-world')
+      assert.equal(data.pageContext.openedLocation, '')
     })
   })
 
