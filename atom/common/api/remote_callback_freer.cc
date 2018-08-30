@@ -41,7 +41,7 @@ void RemoteCallbackFreer::RunDestructor() {
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
     frame_host->Send(new AtomFrameMsg_Message(frame_host->GetRoutingID(), false,
-                                              channel, args));
+                                              channel, args, 0));
   }
 
   Observe(nullptr);
